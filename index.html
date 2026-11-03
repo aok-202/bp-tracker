@@ -1,0 +1,1414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BP Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BP Tracker">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1215" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one thumb-reach column (max 560px). Readings wear the cuff monitor's display panel; a bottom bar holds Overview, Add reading and Readings. */
+:root {
+  --bg: #eef1f0;
+  --surface: #fbfcfb;
+  --surface-2: #f2f5f4;
+  --ink: #14202b;
+  --ink-2: #48545d;
+  --ink-3: #66717a;
+  --line: #d8dedc;
+  --grid: #e3e7e5;
+  --lcd: #dbe4d8;
+  --lcd-edge: #c3cfc0;
+  --lcd-shine: #e9efe7;
+  --lcd-ink: #15251a;
+  --lcd-dim: #4f6153;
+  --band: #c9d5c5;
+  --band-plain: #e2e7e5;
+  --action: #1d3150;
+  --action-ink: #ffffff;
+  --focus: #2a78d6;
+  --danger-ink: #b3302f;
+  --on-danger: #ffffff;
+  --scrim: rgba(10, 16, 22, 0.45);
+  --shadow: 0 1px 2px rgba(20, 32, 43, 0.06), 0 10px 28px rgba(20, 32, 43, 0.10);
+  --sys: #2a78d6;
+  --dia: #eb6834;
+  --good: #0ca30c;
+  --warn: #fab219;
+  --serious: #ec835a;
+  --crit: #d03b3b;
+  --good-bg: #dff0de;
+  --warn-bg: #fbefcf;
+  --serious-bg: #f9e2d8;
+  --crit-bg: #f6d8d8;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1215; --surface: #161b1f; --surface-2: #1c2227; --ink: #e8edef; --ink-2: #b4bfc5; --ink-3: #8d99a1;
+    --line: #2b3339; --grid: #242b30; --lcd: #1a271f; --lcd-edge: #2c3d31; --lcd-shine: #213027; --lcd-ink: #d6efda;
+    --lcd-dim: #8fb197; --band: #26382c; --band-plain: #283037; --action: #cfe0f6; --action-ink: #0f2039; --focus: #7fb0f0;
+    --danger-ink: #ff8f8c; --on-danger: #ffffff; --scrim: rgba(0, 0, 0, 0.6); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.45);
+    --sys: #3987e5; --dia: #d95926; --good-bg: #16301a; --warn-bg: #372c10; --serious-bg: #3a2318; --crit-bg: #3c1a1b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1215; --surface: #161b1f; --surface-2: #1c2227; --ink: #e8edef; --ink-2: #b4bfc5; --ink-3: #8d99a1;
+  --line: #2b3339; --grid: #242b30; --lcd: #1a271f; --lcd-edge: #2c3d31; --lcd-shine: #213027; --lcd-ink: #d6efda;
+  --lcd-dim: #8fb197; --band: #26382c; --band-plain: #283037; --action: #cfe0f6; --action-ink: #0f2039; --focus: #7fb0f0;
+  --danger-ink: #ff8f8c; --on-danger: #ffffff; --scrim: rgba(0, 0, 0, 0.6); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.45);
+  --sys: #3987e5; --dia: #d95926; --good-bg: #16301a; --warn-bg: #372c10; --serious-bg: #3a2318; --crit-bg: #3c1a1b;
+  color-scheme: dark;
+}
+
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.45 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html.sheet-open, html.sheet-open body { overflow: hidden; }
+button, input, summary { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3, h4 { text-wrap: balance; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+.small { font-size: 14px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-block: 10px calc(104px + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: 14px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 4px 0; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand svg { width: 26px; height: 26px; color: var(--ink); flex: none; }
+.brand h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.sync i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.sync.ok i { background: var(--good); }
+.sync.bad i { background: var(--crit); }
+
+.view { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; min-width: 0; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.card-head h2, .card-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.section-title { margin: 6px 0 0; font-size: 19px; font-weight: 700; }
+
+/* status pills: dot + label, never colour alone */
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font: 700 13px/1.25 var(--font-body); color: var(--ink); white-space: nowrap; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.p-normal { background: var(--good-bg); } .p-normal i { background: var(--good); }
+.p-elevated { background: var(--warn-bg); } .p-elevated i { background: var(--warn); }
+.p-stage1 { background: var(--serious-bg); } .p-stage1 i { background: var(--serious); }
+.p-stage2 { background: var(--crit-bg); } .p-stage2 i { background: var(--crit); }
+
+/* monitor display panel */
+.lcd {
+  background: var(--lcd);
+  color: var(--lcd-ink);
+  border: 1px solid var(--lcd-edge);
+  border-radius: 18px;
+  box-shadow: inset 0 2px 0 var(--lcd-shine), inset 0 -1px 0 var(--lcd-edge);
+}
+.hero { padding: 16px 18px 14px; display: grid; gap: 8px; }
+.hero-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.eyebrow { margin: 0; font: 700 12px/1 var(--font-num); letter-spacing: 0.1em; text-transform: uppercase; color: var(--lcd-dim); }
+.readout { display: grid; gap: 0; padding-block: 2px; }
+.ro-row { display: grid; grid-template-columns: 3em 1fr auto; align-items: baseline; }
+.ro-lbl { font: 700 14px/1 var(--font-num); letter-spacing: 0.08em; color: var(--lcd-dim); }
+.ro-num { font: 700 60px/1.02 var(--font-num); text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.ro-unit { font: 400 13px/1 var(--font-num); color: var(--lcd-dim); padding-left: 8px; width: 3.6em; }
+.hero-sub { margin: 0; font-size: 14px; color: var(--lcd-dim); }
+.hero-hint { margin: 0; font-size: 14px; color: var(--lcd-ink); }
+.hero-empty { margin: 6px 0; font-size: 16px; }
+.hero-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 6px 0 0; padding-top: 12px; border-top: 1px dashed var(--lcd-edge); }
+.hero-meta div { min-width: 0; }
+.hero-meta dt { font: 700 11px/1.2 var(--font-num); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lcd-dim); }
+.hero-meta dd { margin: 3px 0 0; }
+.hero-meta b { font: 700 21px/1.1 var(--font-num); }
+.hero-meta span { display: block; font-size: 13px; color: var(--lcd-dim); }
+
+/* week strip */
+.wk { display: grid; grid-template-columns: 2.4em repeat(7, minmax(0, 1fr)); gap: 8px 2px; align-items: center; justify-items: center; }
+.wk-day { display: grid; justify-items: center; gap: 1px; font-size: 12px; color: var(--ink-3); }
+.wk-day b { font: 700 14px/1.5 var(--font-num); color: var(--ink); padding: 0 6px; border-radius: 999px; }
+.wk-day.is-today b { background: var(--action); color: var(--action-ink); }
+.wk-lbl { justify-self: start; font: 700 12px var(--font-num); color: var(--ink-3); letter-spacing: 0.04em; }
+.wk-slot i { display: block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); }
+.wk-slot.on i { background: var(--action); border-color: var(--action); }
+.wk-note { margin: 12px 0 0; }
+
+/* range filter */
+.range-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 14px; font-weight: 700; }
+.chips button[aria-pressed="true"] { background: var(--action); border-color: var(--action); color: var(--action-ink); }
+
+/* chart */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg-dot { width: 10px; height: 10px; border-radius: 50%; }
+.lg-dot.sys { background: var(--sys); } .lg-dot.dia { background: var(--dia); }
+.lg-bar { width: 6px; height: 14px; border-radius: 3px; background: var(--ink-3); opacity: 0.4; }
+.lg-dash { width: 18px; border-top: 2px dashed var(--ink-3); }
+.day-read { min-height: 44px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-size: 14px; color: var(--ink-2); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 6px; }
+.day-read b { color: var(--ink); }
+.day-read .num { font-weight: 700; color: var(--ink); }
+.chart { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; min-height: 236px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; cursor: crosshair; }
+.chart text { font: 400 11px var(--font-body); fill: var(--ink-3); }
+.chart .gl { stroke: var(--grid); stroke-width: 1; }
+.chart .ref { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart .rng { stroke-width: 6; stroke-linecap: round; opacity: 0.22; }
+.chart .rng.sys { stroke: var(--sys); } .chart .rng.dia { stroke: var(--dia); }
+.chart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ln.sys { stroke: var(--sys); } .chart .ln.dia { stroke: var(--dia); }
+.chart .ln.gap { stroke-dasharray: 1 5; }
+.chart .pt { stroke: var(--surface); stroke-width: 2; }
+.chart .pt.sys { fill: var(--sys); } .chart .pt.dia { fill: var(--dia); }
+.chart .xh { stroke: var(--ink-3); stroke-width: 1; }
+.chart .dl { font-weight: 700; fill: var(--ink-2); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.chart-note { margin: 8px 0 0; }
+
+/* category mix */
+.stack { display: flex; gap: 2px; height: 14px; border-radius: 7px; overflow: hidden; background: var(--surface); }
+.stack span { min-width: 4px; }
+.k-normal { background: var(--good); } .k-elevated { background: var(--warn); } .k-stage1 { background: var(--serious); } .k-stage2 { background: var(--crit); }
+.mix-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.mix-list li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 3.4em; gap: 10px; align-items: center; }
+.mix-list .sw { width: 12px; height: 12px; border-radius: 3px; }
+.mix-list .nm { font-weight: 700; }
+.mix-list .rg { display: block; font-weight: 400; font-size: 13px; color: var(--ink-3); }
+.mix-list .ct { font: 700 16px var(--font-num); }
+.mix-list .pc { font: 400 13px var(--font-num); color: var(--ink-3); text-align: right; }
+
+/* compare */
+.cmp-group + .cmp-group { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cmp-group h4 { margin: 0 0 4px; font: 700 12px var(--font-body); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+.cmp { width: 100%; border-collapse: collapse; }
+.cmp th { text-align: left; font-weight: 400; padding: 6px 0; }
+.cmp td { text-align: right; padding: 6px 0; white-space: nowrap; }
+.cmp td.v { font: 700 17px var(--font-num); font-variant-numeric: tabular-nums; }
+.cmp td.n { color: var(--ink-3); font-size: 13px; width: 7.5em; }
+.cmp-note { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); }
+.spread { margin: 2px 0 0; font-size: 15px; }
+.spread b { font: 700 22px var(--font-num); }
+
+.about summary { cursor: pointer; font-weight: 700; min-height: 28px; display: flex; align-items: center; }
+.about-body { display: grid; gap: 10px; margin-top: 10px; font-size: 15px; color: var(--ink-2); max-width: 65ch; }
+.about-body p { margin: 0; }
+.cat-key { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cat-key li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* empty / loading states */
+.state { display: grid; gap: 8px; }
+.state h2 { margin: 0; font-size: 18px; }
+.state p { margin: 0; color: var(--ink-2); max-width: 60ch; }
+.skeleton { height: 12px; border-radius: 6px; background: var(--surface-2); }
+
+/* readings list */
+.view-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.view-head h2 { margin: 0; font-size: 21px; }
+.head-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.backup-line { margin: -6px 0 0; }
+.day-list { display: grid; gap: 12px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.day-head { padding: 12px 16px 10px; display: grid; gap: 4px; border-bottom: 1px solid var(--line); }
+.day-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.day-title { margin: 0; font-weight: 700; font-size: 17px; }
+.day-count { color: var(--ink-3); font-size: 14px; font-weight: 400; }
+.day-stats { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; color: var(--ink-2); }
+.day-stats b { font-family: var(--font-num); color: var(--ink); }
+.rows { list-style: none; margin: 0; padding: 0; }
+.rrow {
+  width: 100%; display: grid; grid-template-columns: 5.2em minmax(0, 1fr) auto 10px; align-items: center; column-gap: 10px;
+  min-height: 54px; padding: 8px 16px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left;
+}
+.rows li:first-child .rrow { border-top: 0; }
+.rrow:active { background: var(--surface-2); }
+.rr-time { font: 400 14px var(--font-num); color: var(--ink-2); white-space: nowrap; }
+.rr-val { font: 700 21px var(--font-num); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rr-val .sl { color: var(--ink-3); font-weight: 400; }
+.rr-tags { font-size: 14px; color: var(--ink-2); text-align: right; white-space: nowrap; }
+.rr-cat { width: 10px; height: 10px; border-radius: 50%; }
+.rr-note { grid-column: 2 / -1; font-size: 13px; color: var(--ink-3); padding-top: 2px; overflow-wrap: anywhere; }
+.rrow.is-out { color: var(--ink-3); }
+.rrow.is-out .rr-val { text-decoration: line-through; font-weight: 400; }
+.out-tag { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
+.more-days { justify-self: center; }
+.csv-box textarea { width: 100%; min-height: 140px; font: 400 12px/1.4 var(--font-num); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.csv-box p { margin: 0 0 8px; color: var(--ink-2); font-size: 14px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 18px; border-radius: 14px; border: 1px solid transparent; font-weight: 700; font-size: 16px; }
+.btn.primary { background: var(--action); color: var(--action-ink); }
+.btn.secondary { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+.btn.danger { background: var(--crit); color: var(--on-danger); }
+.btn.quiet { background: transparent; color: var(--danger-ink); padding: 0 8px; }
+.btn.small { min-height: 40px; padding: 0 14px; font-size: 14px; border-radius: 12px; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* bottom bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.tabbar-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; border: 0; border-radius: 12px; background: transparent; color: var(--ink-3); font-size: 12px; font-weight: 700; }
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { color: var(--ink); }
+.add-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--action); color: var(--action-ink); font-size: 16px; font-weight: 700; box-shadow: var(--shadow); white-space: nowrap; }
+.add-btn svg { width: 20px; height: 20px; }
+.add-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* entry sheet */
+.backdrop { position: fixed; inset: 0; z-index: 30; background: var(--scrim); opacity: 0; transition: opacity 0.2s ease; }
+.backdrop.open { opacity: 1; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; margin: 0 auto; width: 100%; max-width: 560px;
+  max-height: 94vh; max-height: 94dvh; display: flex; flex-direction: column;
+  background: var(--surface); border-radius: 22px 22px 0 0; box-shadow: var(--shadow);
+  transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sheet.open { transform: none; }
+.sheet:focus { outline: none; }
+.grip { width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: 8px auto 0; flex: none; }
+.sheet-head, .sheet-body, .sheet-foot { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; padding-bottom: 6px; flex: none; }
+.sheet-head h2 { margin: 0; font-size: 19px; }
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--ink-2); }
+.icon-btn svg { width: 20px; height: 20px; }
+.sheet-body { overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 14px; padding-top: 4px; padding-bottom: 14px; flex: 1 1 auto; min-height: 0; }
+.sheet-foot { display: grid; grid-template-columns: 1.45fr 1fr; gap: 10px; padding-top: 10px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); flex: none; }
+.sheet-foot.edit { grid-template-columns: auto 1fr; }
+.sheet-foot.confirm { grid-template-columns: 1fr auto auto; align-items: center; }
+.sheet-foot.confirm span { font-weight: 700; }
+
+.entry { padding: 10px 8px 12px; }
+.entry-cols { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; }
+.entry-col { display: grid; gap: 4px; min-width: 0; }
+.lcd-label { font: 700 12px/1 var(--font-num); letter-spacing: 0.1em; color: var(--lcd-dim); text-align: center; }
+.lcd-label small { font-weight: 400; letter-spacing: 0.02em; }
+.entry-slash { font: 400 40px/1 var(--font-num); color: var(--lcd-dim); padding: 18px 2px 0; }
+.entry-foot { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 28px; padding-top: 6px; }
+
+.wheel { position: relative; border-radius: 12px; outline: none; touch-action: pan-y; }
+.wheel:focus-visible { box-shadow: 0 0 0 2px var(--focus); }
+.wheel-band { position: absolute; left: 6px; right: 6px; top: 50%; height: var(--row); margin-top: calc(var(--row) / -2); border-radius: 10px; background: var(--band); pointer-events: none; }
+.wheel-track {
+  position: relative; height: 100%; overflow-y: scroll; overscroll-behavior: contain; scroll-snap-type: y mandatory;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 30%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 30%, #000 70%, transparent 100%);
+}
+.wheel-track::-webkit-scrollbar { display: none; }
+.wheel-spacer { pointer-events: none; }
+.wheel-item {
+  height: var(--row); display: flex; align-items: center; justify-content: center; scroll-snap-align: center;
+  font: 700 32px/1 var(--font-num); font-variant-numeric: tabular-nums; color: var(--lcd-ink);
+  user-select: none; -webkit-user-select: none; cursor: pointer; will-change: transform, opacity;
+}
+.wheel.plain .wheel-band { background: var(--band-plain); }
+.wheel.plain .wheel-item { font: 700 17px/1 var(--font-body); color: var(--ink); white-space: nowrap; }
+.wheel.plain .wheel-item.num-face { font-family: var(--font-num); }
+
+.notice { border-radius: 12px; padding: 10px 12px; font-size: 14px; background: var(--crit-bg); color: var(--ink); display: flex; gap: 10px; align-items: flex-start; }
+.notice i { width: 10px; height: 10px; border-radius: 50%; background: var(--crit); margin-top: 5px; flex: none; }
+
+.pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 359px) { .pick-row { grid-template-columns: 1fr; } }
+.pick { display: grid; gap: 6px; min-width: 0; }
+.pick-label { font-size: 12px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; }
+.seg button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-2); font-size: 15px; font-weight: 700; }
+.seg button[aria-checked="true"] { background: var(--action); color: var(--action-ink); }
+.when-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); color: var(--ink); font-size: 16px; font-weight: 700; text-align: left; }
+.when-btn .chg { font-size: 14px; color: var(--ink-3); }
+.when-panel { display: grid; gap: 8px; }
+.when-wheels { display: grid; grid-template-columns: minmax(0, 1.7fr) repeat(3, minmax(0, 0.75fr)); gap: 2px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
+.link-btn { justify-self: start; min-height: 40px; padding: 0 4px; border: 0; background: transparent; color: var(--ink-2); font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.more summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--ink-2); }
+.more-body { display: grid; gap: 12px; padding-top: 4px; }
+.field { display: grid; gap: 6px; }
+.field input { min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 16px; }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--action); flex: none; }
+.session { display: grid; gap: 6px; }
+.session-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 700 14px var(--font-num); padding: 5px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+.chip span { font: 400 12px var(--font-body); color: var(--ink-3); margin-left: 4px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 40; transform: translateX(-50%);
+  width: max-content; max-width: min(520px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px 12px 16px; border-radius: 14px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 700; box-shadow: var(--shadow);
+}
+.toast button { border: 0; background: transparent; color: var(--bg); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 36px; padding: 0 4px; white-space: nowrap; }
+html.sheet-open .toast { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .backdrop { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8.5"/><path d="M12 13l4.2-4.2"/><path d="M6.6 16.2h.01M5.6 12.6h.01M7 9h.01M10.4 6.6h.01M12 3.5v1"/></svg>
+      <h1>BP Tracker</h1>
+    </div>
+    <span class="sync" id="sync" role="status"><i></i><span id="syncText">Connecting…</span></span>
+  </header>
+
+  <main>
+    <section class="view" id="ov" aria-label="Overview">
+      <div id="ovState" class="card state">
+        <h2>Loading your readings…</h2>
+        <div class="skeleton" style="width: 70%"></div>
+        <div class="skeleton" style="width: 45%"></div>
+        <p>Your averages, trends and comparisons appear here once your readings load.</p>
+      </div>
+      <div id="ovMain" class="view" hidden>
+        <section id="ovHero" class="lcd hero" aria-labelledby="heroTitle"></section>
+        <section id="ovWeek" class="card" aria-label="Sittings this week"></section>
+        <div class="range-row">
+          <h2 class="section-title">Trends</h2>
+          <div class="chips" role="group" aria-label="Time range" id="rangeChips">
+            <button type="button" data-range="14" aria-pressed="false">14 days</button>
+            <button type="button" data-range="30" aria-pressed="true">30 days</button>
+            <button type="button" data-range="90" aria-pressed="false">90 days</button>
+            <button type="button" data-range="0" aria-pressed="false">All</button>
+          </div>
+        </div>
+        <section class="card" aria-labelledby="trendTitle">
+          <div class="card-head"><h3 id="trendTitle">Daily average</h3><span class="muted small" id="trendSub"></span></div>
+          <div class="legend" aria-hidden="true">
+            <span><i class="lg-dot sys"></i>SYS</span><span><i class="lg-dot dia"></i>DIA</span><span><i class="lg-bar"></i>Day's low to high</span><span><i class="lg-dash"></i>130/80 line</span>
+          </div>
+          <div class="day-read" id="dayRead" aria-live="polite"></div>
+          <div class="chart" id="trend"></div>
+          <p class="muted small chart-note">Tap or drag across the chart to see a day. A dotted line means days with no readings in between.</p>
+        </section>
+        <section id="ovMix" class="card" aria-label="Readings by category"></section>
+        <section id="ovCmp" class="card" aria-label="Compare"></section>
+        <details id="about" class="card about">
+          <summary>How the categories work</summary>
+          <div class="about-body">
+            <p>Categories follow the 2025 American Heart Association and American College of Cardiology guideline. A reading takes the higher category that either its SYS or its DIA reaches.</p>
+            <ul class="cat-key">
+              <li><span class="pill p-normal"><i></i>Normal</span> Under 120 and under 80</li>
+              <li><span class="pill p-elevated"><i></i>Elevated</span> 120–129 and under 80</li>
+              <li><span class="pill p-stage1"><i></i>Stage 1</span> 130–139 or 80–89</li>
+              <li><span class="pill p-stage2"><i></i>Stage 2</span> 140 or more, or 90 or more</li>
+            </ul>
+            <p>European guidelines (ESC 2024) treat a home average of 135/85 or higher as high blood pressure.</p>
+            <p><b>For an average you can rely on:</b> sit quietly for 5 minutes with your back supported and arm at heart level. Take 2 readings 1 minute apart, morning and evening, for 7 days, using the same arm and device.</p>
+            <p><b>Very high readings:</b> 180/120 or higher. Rest and measure again. Get urgent care if it stays that high or you have chest pain, shortness of breath, a severe headache, weakness or vision changes.</p>
+            <p class="small">This is a personal log, not a diagnosis. Share your averages with your doctor.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="view" id="rd" aria-label="Readings" hidden>
+      <div class="view-head">
+        <h2>Readings</h2>
+        <div class="head-btns">
+          <button type="button" class="btn small secondary" id="importBtn">Import CSV</button>
+          <button type="button" class="btn small primary" id="exportBtn">Export CSV</button>
+        </div>
+      </div>
+      <input type="file" id="importFile" accept=".csv,text/csv,text/plain" hidden>
+      <p class="muted small backup-line" id="backupLine"></p>
+      <div class="card csv-box" id="csvBox" hidden>
+        <p>Copy this text and paste it into a spreadsheet or an email to your doctor.</p>
+        <label class="sr" for="csvText">Readings as CSV</label>
+        <textarea id="csvText" readonly></textarea>
+      </div>
+      <div id="rdList" class="day-list"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="Main">
+  <div class="tabbar-in">
+    <button type="button" class="tab" data-view="ov" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"/><path d="M5 15l4-5 4 3 6-7"/></svg>
+      Overview
+    </button>
+    <button type="button" class="add-btn" id="addBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Add reading
+    </button>
+    <button type="button" class="tab" data-view="rd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>
+      Readings
+    </button>
+  </div>
+</nav>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1" hidden>
+  <div class="grip" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="sheetTitle">New reading</h2>
+    <button type="button" class="icon-btn" id="sheetClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="sheetBody">
+    <div class="lcd entry">
+      <div class="entry-cols">
+        <div class="entry-col"><div class="lcd-label">SYS <small>mmHg</small></div><div id="wSys"></div></div>
+        <div class="entry-slash" aria-hidden="true">/</div>
+        <div class="entry-col"><div class="lcd-label">DIA <small>mmHg</small></div><div id="wDia"></div></div>
+      </div>
+      <div class="entry-foot" id="entryStatus" aria-live="polite"></div>
+    </div>
+    <div class="notice" id="severeNote" hidden><i aria-hidden="true"></i><span>Very high. Rest for 5 minutes and measure again. If it stays this high, or you have chest pain, shortness of breath, a severe headache, weakness or vision changes, get emergency care.</span></div>
+    <div class="pick-row">
+      <div class="pick">
+        <span class="pick-label" id="armLbl">Arm</span>
+        <div class="seg" role="radiogroup" aria-labelledby="armLbl" id="armSeg">
+          <button type="button" role="radio" data-v="L" aria-checked="false">Left</button>
+          <button type="button" role="radio" data-v="R" aria-checked="false">Right</button>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="pick-label" id="siteLbl">Cuff</span>
+        <div class="seg" role="radiogroup" aria-labelledby="siteLbl" id="siteSeg">
+          <button type="button" role="radio" data-v="Bicep" aria-checked="false">Bicep</button>
+          <button type="button" role="radio" data-v="Wrist" aria-checked="false">Wrist</button>
+        </div>
+      </div>
+    </div>
+    <div class="pick">
+      <span class="pick-label" id="whenLbl">When</span>
+      <button type="button" class="when-btn" id="whenBtn" aria-expanded="false" aria-controls="whenPanel" aria-describedby="whenLbl"><span id="whenText">Today</span><span class="chg" id="whenChg">Change</span></button>
+      <div class="when-panel" id="whenPanel" hidden>
+        <div class="when-wheels"><div id="wDay"></div><div id="wHour"></div><div id="wMin"></div><div id="wAp"></div></div>
+        <button type="button" class="link-btn" id="nowBtn">Set to now</button>
+      </div>
+    </div>
+    <details class="more" id="moreBox">
+      <summary>Note or leave out</summary>
+      <div class="more-body">
+        <label class="field"><span class="pick-label">Note</span><input id="noteInput" type="text" maxlength="120" placeholder="e.g. after coffee, felt rushed" autocomplete="off"></label>
+        <label class="toggle"><input type="checkbox" id="excludeInput"><span>Leave this reading out of averages (faulty reading)</span></label>
+      </div>
+    </details>
+    <div class="session" id="sessionBox" hidden>
+      <span class="pick-label">Saved in this sitting</span>
+      <div class="session-chips" id="sessionChips"></div>
+    </div>
+  </div>
+  <div class="sheet-foot" id="footNew">
+    <button type="button" class="btn secondary" id="saveNextBtn">Save + add another</button>
+    <button type="button" class="btn primary" id="saveBtn">Save</button>
+  </div>
+  <div class="sheet-foot edit" id="footEdit" hidden>
+    <button type="button" class="btn quiet" id="deleteBtn">Delete</button>
+    <button type="button" class="btn primary" id="saveEditBtn">Save changes</button>
+  </div>
+  <div class="sheet-foot confirm" id="footConfirm" hidden>
+    <span>Delete this reading?</span>
+    <button type="button" class="btn secondary small" id="keepBtn">Keep</button>
+    <button type="button" class="btn danger small" id="confirmDeleteBtn">Delete</button>
+  </div>
+</section>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rd = Math.round;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- dates (stored as local wall-clock strings: YYYY-MM-DD and HH:MM) ----------
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const parseYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const dayNum = (s) => { const [y, m, d] = s.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 86400000); };
+  const fromDayNum = (n) => { const d = new Date(n * 86400000); return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`; };
+  const todayStr = () => ymd(new Date());
+  const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDay(s, weekday = true) {
+    const d = parseYmd(s);
+    let out = `${d.getDate()} ${MO[d.getMonth()]}`;
+    if (weekday) out = `${WD[d.getDay()]} ${out}`;
+    if (d.getFullYear() !== new Date().getFullYear()) out += ` ${d.getFullYear()}`;
+    return out;
+  }
+  function relDay(s) {
+    const diff = dayNum(todayStr()) - dayNum(s);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return fmtDay(s);
+  }
+  function fmtTime(t) { let [h, m] = t.split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${pad2(m)} ${ap}`; }
+  const minutesOf = (r) => dayNum(r.date) * 1440 + Number(r.time.slice(0, 2)) * 60 + Number(r.time.slice(3, 5));
+  const cmpReading = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.time < b.time ? -1 : a.time > b.time ? 1 : a.seq - b.seq);
+
+  // ---------- categories (AHA/ACC 2025) ----------
+  const CATS = [
+    { k: 'normal', label: 'Normal', range: 'Under 120 and under 80' },
+    { k: 'elevated', label: 'Elevated', range: '120–129 and under 80' },
+    { k: 'stage1', label: 'Stage 1', range: '130–139 or 80–89' },
+    { k: 'stage2', label: 'Stage 2', range: '140+ or 90+' },
+  ];
+  function catOf(s, d) { s = rd(s); d = rd(d); if (s >= 140 || d >= 90) return 'stage2'; if (s >= 130 || d >= 80) return 'stage1'; if (s >= 120) return 'elevated'; return 'normal'; }
+  const catLabel = (k) => CATS.find((c) => c.k === k).label;
+  const pill = (s, d) => { const k = catOf(s, d); return `<span class="pill p-${k}"><i aria-hidden="true"></i>${catLabel(k)}</span>`; };
+  const isSevere = (s, d) => s >= 180 || d >= 120;
+
+  // ---------- stats ----------
+  const incl = (list) => list.filter((r) => !r.exclude);
+  const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  function agg(list) {
+    const L = incl(list);
+    if (!L.length) return null;
+    const S = L.map((r) => r.sys), D = L.map((r) => r.dia);
+    return { n: L.length, s: mean(S), d: mean(D), minS: Math.min(...S), maxS: Math.max(...S), minD: Math.min(...D), maxD: Math.max(...D) };
+  }
+  function groupBy(list, key) { const m = new Map(); for (const r of list) { const k = key(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); } return m; }
+  function periodOf(t) { const h = Number(t.slice(0, 2)); return h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 18 ? 'afternoon' : 'evening'; }
+  function sittings(sorted) {
+    const out = []; let cur = null, last = -Infinity;
+    for (const r of sorted) { const m = minutesOf(r); if (!cur || m - last > 30) { cur = []; out.push(cur); } cur.push(r); last = m; }
+    return out;
+  }
+  function spread(sorted) {
+    const groups = sittings(incl(sorted)).filter((g) => g.length >= 2);
+    if (!groups.length) return null;
+    const rng = (g, f) => Math.max(...g.map(f)) - Math.min(...g.map(f));
+    return { n: groups.length, s: mean(groups.map((g) => rng(g, (r) => r.sys))), d: mean(groups.map((g) => rng(g, (r) => r.dia))) };
+  }
+  function weekSlots(list, today) {
+    const t = dayNum(today), days = [];
+    for (let i = 6; i >= 0; i--) days.push({ dn: t - i, date: fromDayNum(t - i), am: 0, pm: 0 });
+    for (const r of list) {
+      const h = Number(r.time.slice(0, 2));
+      let dn = dayNum(r.date), slot = null;
+      if (h >= 5 && h < 12) slot = 'am';
+      else if (h >= 18) slot = 'pm';
+      else if (h < 5) { slot = 'pm'; dn -= 1; } // after midnight counts as the night before
+      if (!slot) continue;
+      const day = days.find((x) => x.dn === dn);
+      if (day) day[slot] += 1;
+    }
+    return days;
+  }
+
+  // ---------- state ----------
+  const state = {
+    readings: [], loaded: false, confirmed: false, slow: false, unavailable: false, loadError: null,
+    db: null, downloads: null, canWrite: true, writeKnown: false,
+    view: 'ov', range: 30, selDay: null, daysShown: 14,
+  };
+
+  function clean(id, r, docId) {
+    if (!r || typeof r !== 'object' || r.deleted === true) return null;
+    const date = typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null;
+    const time = typeof r.time === 'string' && /^\d{2}:\d{2}$/.test(r.time) ? r.time : null;
+    const sys = Number(r.sys), dia = Number(r.dia);
+    if (!date || !time || !Number.isFinite(sys) || !Number.isFinite(dia) || sys < 40 || sys > 300 || dia < 20 || dia > 250) return null;
+    return {
+      id, _doc: docId, date, time, sys: rd(sys), dia: rd(dia),
+      arm: r.arm === 'L' || r.arm === 'R' ? r.arm : '',
+      site: r.site === 'Bicep' || r.site === 'Wrist' ? r.site : '',
+      exclude: r.exclude === true, note: typeof r.note === 'string' ? r.note.slice(0, 200) : '',
+      seq: Number.isFinite(Number(r.seq)) ? Number(r.seq) : 0,
+      at: Number.isFinite(Number(r.at)) ? Number(r.at) : 0,
+    };
+  }
+  function ingest(docs) {
+    const byId = new Map();
+    for (const doc of docs) {
+      const body = doc.data();
+      if (!body || !body.readings || typeof body.readings !== 'object') continue;
+      for (const [id, raw] of Object.entries(body.readings)) {
+        const r = clean(id, raw, doc.id);
+        if (!r) continue;
+        const prev = byId.get(id);
+        if (!prev || r.at > prev.at || (r.at === prev.at && r._doc === r.date.slice(0, 7))) byId.set(id, r);
+      }
+    }
+    state.readings = Array.from(byId.values()).sort(cmpReading);
+  }
+
+  // ---------- writes: one month document per calendar month, readings keyed by id ----------
+  const queues = new Map();
+  function enqueue(key, fn) { const p = (queues.get(key) || Promise.resolve()).catch(() => {}).then(fn); queues.set(key, p); return p; }
+  async function attempt(fn) {
+    try { return await fn(); } catch (e) {
+      if (e && e.code === 'unavailable') { await new Promise((res) => setTimeout(res, 400 + Math.random() * 800)); return fn(); }
+      throw e;
+    }
+  }
+  const stored = (r) => ({ date: r.date, time: r.time, sys: r.sys, dia: r.dia, arm: r.arm, site: r.site, exclude: !!r.exclude, note: r.note || '', seq: r.seq, at: Date.now(), deleted: false });
+  async function putReading(rec, prevDoc) {
+    const mk = rec.date.slice(0, 7);
+    const body = stored(rec);
+    await enqueue(mk, async () => {
+      const ref = state.db.doc('months/' + mk);
+      try { await attempt(() => ref.update({ readings: { [rec.id]: body } })); } catch (e) {
+        if (!e || e.code !== 'invalid_argument') throw e;
+        const snap = await attempt(() => ref.get());
+        if (snap.exists) throw e;
+        await attempt(() => ref.set({ month: mk, readings: { [rec.id]: body } }));
+      }
+    });
+    if (prevDoc && prevDoc !== mk) {
+      await enqueue(prevDoc, () => attempt(() => state.db.doc('months/' + prevDoc).update({ readings: { [rec.id]: { deleted: true } } })));
+    }
+  }
+  function setDeleted(rec, flag) {
+    const mk = rec._doc || rec.date.slice(0, 7);
+    return enqueue(mk, () => attempt(() => state.db.doc('months/' + mk).update({ readings: { [rec.id]: { deleted: flag } } })));
+  }
+  function writeFailed(e, what, retry) {
+    const code = e && e.code;
+    if (!state.writeKnown && (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked')) {
+      state.canWrite = false; renderTop();
+      toast(`This page is view-only for you, so ${what} wasn't saved.`);
+      return;
+    }
+    if (code === 'quota_exceeded') { toast(`Storage for this page is full, so ${what} wasn't saved.`); return; }
+    toast(`Couldn't save ${what}. Check your connection.`, { label: 'Try again', run: retry });
+  }
+
+  // ---------- toast ----------
+  let toastTimer = 0;
+  function toast(msg, action) {
+    const t = $('#toast');
+    t.replaceChildren();
+    const s = document.createElement('span'); s.textContent = msg; t.appendChild(s);
+    if (action) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label;
+      b.addEventListener('click', () => { hideToast(); action.run(); });
+      t.appendChild(b);
+    }
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, action ? 7000 : 3200);
+  }
+  function hideToast() { $('#toast').hidden = true; }
+
+  // ---------- wheel picker ----------
+  class Wheel {
+    constructor(el, o) {
+      this.el = el;
+      this.o = Object.assign({ rowH: 44, rows: 5, format: (v) => String(v) }, o);
+      this.values = o.values || [];
+      this.index = 0; this.live = -1; this.raf = 0; this.timer = 0;
+      el.classList.add('wheel');
+      if (o.plain) el.classList.add('plain');
+      el.tabIndex = 0;
+      el.setAttribute('role', 'spinbutton');
+      el.setAttribute('aria-label', o.label);
+      el.style.setProperty('--row', this.o.rowH + 'px');
+      el.style.height = this.o.rows * this.o.rowH + 'px';
+      el.innerHTML = '<div class="wheel-band" aria-hidden="true"></div><div class="wheel-track" aria-hidden="true"></div>';
+      this.track = el.lastChild;
+      this.build();
+      this.track.addEventListener('scroll', () => this.onScroll(), { passive: true });
+      if ('onscrollend' in window) this.track.addEventListener('scrollend', () => this.settle());
+      this.track.addEventListener('click', (e) => { const it = e.target.closest('.wheel-item'); if (it) this.go(Number(it.dataset.i), true); });
+      el.addEventListener('keydown', (e) => this.key(e));
+    }
+    build() {
+      const pad = ((this.o.rows - 1) / 2) * this.o.rowH;
+      const f = document.createDocumentFragment();
+      const spacer = () => { const s = document.createElement('div'); s.className = 'wheel-spacer'; s.style.height = pad + 'px'; return s; };
+      f.appendChild(spacer());
+      this.items = this.values.map((v, i) => {
+        const d = document.createElement('div');
+        d.className = 'wheel-item' + (this.o.numFace ? ' num-face' : '');
+        d.dataset.i = i; d.textContent = this.o.format(v);
+        f.appendChild(d); return d;
+      });
+      f.appendChild(spacer());
+      this.track.replaceChildren(f);
+    }
+    setValues(values, value) { this.values = values; this.index = -1; this.build(); this.setValue(value); }
+    setValue(v) {
+      let i = this.values.indexOf(v);
+      if (i < 0 && typeof v === 'number' && this.values.length && typeof this.values[0] === 'number') {
+        i = this.values.reduce((bi, x, k) => (Math.abs(x - v) < Math.abs(this.values[bi] - v) ? k : bi), 0);
+      }
+      if (i < 0) i = this.values.length - 1;
+      this.go(i, false);
+    }
+    get value() { return this.values[this.index]; }
+    current() { return this.values[Math.max(0, Math.min(this.values.length - 1, Math.round(this.track.scrollTop / this.o.rowH)))]; }
+    go(i, smooth) {
+      i = Math.max(0, Math.min(this.values.length - 1, i));
+      const top = i * this.o.rowH;
+      if (smooth && !reduceMotion) this.track.scrollTo({ top, behavior: 'smooth' });
+      else { this.track.scrollTop = top; this.paint(i); }
+      this.commit(i);
+    }
+    sync() { this.track.scrollTop = this.index * this.o.rowH; this.paint(this.index); }
+    onScroll() {
+      if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; this.paint(); });
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.settle(), 140);
+    }
+    paint(at) {
+      const n = this.items.length;
+      if (!n) return;
+      const c = at != null ? at : this.track.scrollTop / this.o.rowH;
+      const li = Math.max(0, Math.min(n - 1, Math.round(c)));
+      if (li !== this.live) { this.live = li; if (this.o.onLive) this.o.onLive(this.values[li]); }
+      const a = Math.max(0, Math.floor(c) - 4), b = Math.min(n - 1, Math.ceil(c) + 4);
+      for (let k = a; k <= b; k++) {
+        const d = k - c, ad = Math.min(Math.abs(d), 3), it = this.items[k];
+        it.style.opacity = (1 - ad * 0.27).toFixed(2);
+        it.style.transform = reduceMotion ? '' : `perspective(420px) rotateX(${(-d * 17).toFixed(1)}deg) scale(${(1 - ad * 0.11).toFixed(3)})`;
+      }
+    }
+    settle() { this.commit(Math.max(0, Math.min(this.values.length - 1, Math.round(this.track.scrollTop / this.o.rowH)))); }
+    commit(i) {
+      const changed = i !== this.index;
+      this.index = i;
+      this.aria();
+      if (changed && this.o.onChange) this.o.onChange(this.values[i]);
+    }
+    aria() {
+      const v = this.values[this.index];
+      if (typeof v === 'number') {
+        this.el.setAttribute('aria-valuenow', String(v));
+        this.el.setAttribute('aria-valuemin', String(this.values[0]));
+        this.el.setAttribute('aria-valuemax', String(this.values[this.values.length - 1]));
+      }
+      this.el.setAttribute('aria-valuetext', this.o.valueText ? this.o.valueText(v) : this.o.format(v));
+    }
+    key(e) {
+      const map = { ArrowUp: -1, ArrowDown: 1, PageUp: -10, PageDown: 10 };
+      if (e.key === 'Home') { e.preventDefault(); this.go(0, true); return; }
+      if (e.key === 'End') { e.preventDefault(); this.go(this.values.length - 1, true); return; }
+      if (!(e.key in map)) return;
+      e.preventDefault();
+      this.go(this.index + map[e.key], true);
+    }
+  }
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+  // ---------- entry sheet ----------
+  const S = { mode: 'new', editing: null, v: null, session: [], lastFocus: null, syncing: false };
+  let closeTimer = 0;
+  let wSys, wDia, wDay, wHour, wMin, wAp;
+  function loadPref() { try { return JSON.parse(localStorage.getItem('bp-pref') || '{}') || {}; } catch (e) { return {}; } }
+  function savePref(arm, site) { try { localStorage.setItem('bp-pref', JSON.stringify({ arm, site })); } catch (e) { /* storage unavailable */ } }
+  function defaults() {
+    const last = state.readings[state.readings.length - 1];
+    const pref = loadPref();
+    return {
+      sys: last ? last.sys : 120, dia: last ? last.dia : 80, date: todayStr(), time: nowTime(),
+      arm: pref.arm || (last && last.arm) || 'L', site: pref.site || (last && last.site) || 'Wrist', note: '', exclude: false,
+    };
+  }
+  function buildWheels() {
+    wSys = new Wheel($('#wSys'), { values: range(60, 250), rowH: 42, label: 'Systolic, SYS', valueText: (v) => `${v} millimetres of mercury`, onLive: (v) => { S.v && (S.v.sys = v); entryStatus(); }, onChange: (v) => { S.v && (S.v.sys = v); entryStatus(); } });
+    wDia = new Wheel($('#wDia'), { values: range(30, 160), rowH: 42, label: 'Diastolic, DIA', valueText: (v) => `${v} millimetres of mercury`, onLive: (v) => { S.v && (S.v.dia = v); entryStatus(); }, onChange: (v) => { S.v && (S.v.dia = v); entryStatus(); } });
+    const whenChanged = () => { if (!S.v || S.syncing) return; S.v.date = wDay.value; S.v.time = toTime(wHour.value, wMin.value, wAp.value); whenText(); };
+    wDay = new Wheel($('#wDay'), { values: [todayStr()], plain: true, rowH: 38, label: 'Date', format: (d) => relDay(d), onChange: whenChanged });
+    wHour = new Wheel($('#wHour'), { values: range(1, 12), plain: true, numFace: true, rowH: 38, label: 'Hour', onChange: whenChanged });
+    wMin = new Wheel($('#wMin'), { values: range(0, 59), plain: true, numFace: true, rowH: 38, label: 'Minute', format: (m) => pad2(m), onChange: whenChanged });
+    wAp = new Wheel($('#wAp'), { values: ['AM', 'PM'], plain: true, rowH: 38, label: 'AM or PM', onChange: whenChanged });
+  }
+  const toTime = (h12, m, ap) => `${pad2((h12 % 12) + (ap === 'PM' ? 12 : 0))}:${pad2(m)}`;
+  function whenText() { $('#whenText').textContent = `${relDay(S.v.date)} · ${fmtTime(S.v.time)}`; }
+  function entryStatus() {
+    if (!S.v) return;
+    $('#entryStatus').innerHTML = pill(S.v.sys, S.v.dia);
+    $('#severeNote').hidden = !isSevere(S.v.sys, S.v.dia);
+  }
+  function syncSegs() {
+    for (const b of $$('#armSeg button')) b.setAttribute('aria-checked', String(b.dataset.v === S.v.arm));
+    for (const b of $$('#siteSeg button')) b.setAttribute('aria-checked', String(b.dataset.v === S.v.site));
+  }
+  function setWhenWheels() {
+    const date = S.v.date, time = S.v.time;
+    const tn = dayNum(todayStr()), dn = dayNum(date);
+    const start = Math.min(dn, tn - 365), end = Math.max(dn, tn);
+    const [h, m] = time.split(':').map(Number);
+    S.syncing = true;
+    wDay.setValues(range(start, end).map(fromDayNum), date);
+    wHour.setValue(h % 12 || 12); wMin.setValue(m); wAp.setValue(h >= 12 ? 'PM' : 'AM');
+    S.syncing = false;
+  }
+  function renderSession() {
+    $('#sessionBox').hidden = !S.session.length;
+    $('#sessionChips').innerHTML = S.session.map((r) => `<span class="chip">${r.sys}/${r.dia}<span>${r.arm || '?'} · ${esc(r.site || '?')}</span></span>`).join('');
+  }
+  function showFoot(which) { $('#footNew').hidden = which !== 'new'; $('#footEdit').hidden = which !== 'edit'; $('#footConfirm').hidden = which !== 'confirm'; }
+  function openSheet(mode, rec) {
+    clearTimeout(closeTimer);
+    S.mode = mode; S.editing = rec || null; S.session = [];
+    const base = rec || defaults();
+    S.v = { sys: base.sys, dia: base.dia, date: base.date, time: base.time, arm: base.arm || '', site: base.site || 'Wrist', note: base.note || '', exclude: !!base.exclude };
+    $('#sheetTitle').textContent = mode === 'edit' ? 'Edit reading' : 'New reading';
+    showFoot(mode === 'edit' ? 'edit' : 'new');
+    $('#noteInput').value = S.v.note;
+    $('#excludeInput').checked = S.v.exclude;
+    $('#moreBox').open = !!(S.v.note || S.v.exclude);
+    $('#whenPanel').hidden = true; $('#whenBtn').setAttribute('aria-expanded', 'false'); $('#whenChg').textContent = 'Change';
+    syncSegs(); whenText(); renderSession(); entryStatus(); updateSaveButtons();
+    S.lastFocus = document.activeElement;
+    const sheet = $('#sheet'), bd = $('#backdrop');
+    bd.hidden = false; sheet.hidden = false;
+    document.documentElement.classList.add('sheet-open');
+    $('#sheetBody').scrollTop = 0;
+    requestAnimationFrame(() => {
+      wSys.setValue(S.v.sys); wDia.setValue(S.v.dia);
+      sheet.classList.add('open'); bd.classList.add('open');
+      sheet.focus({ preventScroll: true });
+    });
+  }
+  function closeSheet() {
+    const sheet = $('#sheet'), bd = $('#backdrop');
+    if (sheet.hidden) return;
+    sheet.classList.remove('open'); bd.classList.remove('open');
+    document.documentElement.classList.remove('sheet-open');
+    const done = () => { sheet.hidden = true; bd.hidden = true; };
+    if (reduceMotion) done(); else closeTimer = setTimeout(done, 280);
+    S.v = null;
+    if (location.hash === '#add') history.replaceState(null, '', '#' + (state.view === 'rd' ? 'readings' : 'overview'));
+    if (S.lastFocus && S.lastFocus.focus) S.lastFocus.focus({ preventScroll: true });
+  }
+  function updateSaveButtons() {
+    const off = !state.db || !state.canWrite;
+    for (const id of ['saveBtn', 'saveNextBtn', 'saveEditBtn', 'deleteBtn']) $('#' + id).disabled = off;
+  }
+  const newId = () => 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function collect() {
+    S.v.sys = wSys.current(); S.v.dia = wDia.current();
+    S.v.note = $('#noteInput').value.trim().slice(0, 120);
+    S.v.exclude = $('#excludeInput').checked;
+    const isEdit = S.mode === 'edit';
+    return {
+      id: isEdit ? S.editing.id : newId(), date: S.v.date, time: S.v.time, sys: S.v.sys, dia: S.v.dia,
+      arm: S.v.arm || '', site: S.v.site || 'Wrist', exclude: S.v.exclude, note: S.v.note, seq: isEdit ? S.editing.seq : Date.now(),
+    };
+  }
+  function doWrite(rec, prevDoc, label) {
+    putReading(rec, prevDoc).then(
+      () => toast(`Saved ${label}`),
+      (e) => writeFailed(e, label, () => doWrite(rec, prevDoc, label))
+    );
+  }
+  function save(another) {
+    if (!state.db || !state.canWrite || !S.v) return;
+    const rec = collect();
+    const prevDoc = S.mode === 'edit' ? S.editing._doc : null;
+    if (rec.arm) savePref(rec.arm, rec.site);
+    const label = `${rec.sys}/${rec.dia}`;
+    if (another) {
+      S.session.push(rec); renderSession();
+      $('#noteInput').value = ''; $('#excludeInput').checked = false; S.v.note = ''; S.v.exclude = false;
+      toast(`Saving ${label}…`);
+    } else {
+      closeSheet();
+      toast(`Saving ${label}…`);
+    }
+    doWrite(rec, prevDoc, label);
+  }
+  function del() {
+    const rec = S.editing;
+    closeSheet();
+    setDeleted(rec, true).then(
+      () => toast(`Deleted ${rec.sys}/${rec.dia}`, { label: 'Undo', run: () => setDeleted(rec, false).catch((e) => writeFailed(e, 'the undo', () => setDeleted(rec, false))) }),
+      (e) => writeFailed(e, 'the delete', () => setDeleted(rec, true))
+    );
+  }
+  function trapFocus(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeSheet(); return; }
+    if (e.key !== 'Tab') return;
+    const f = $$('button, input, summary, [tabindex="0"]', $('#sheet')).filter((el) => !el.disabled && el.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === $('#sheet'))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  // ---------- rendering ----------
+  function renderTop() {
+    const el = $('#sync'), t = $('#syncText');
+    el.className = 'sync';
+    if (state.unavailable) { t.textContent = 'Not connected'; el.classList.add('bad'); }
+    else if (state.loadError) { t.textContent = 'Not loading'; el.classList.add('bad'); }
+    else if (!state.loaded) t.textContent = 'Connecting…';
+    else if (!state.canWrite) t.textContent = 'View only';
+    else if (state.slow && !state.confirmed) { t.textContent = 'May be out of date'; el.classList.add('bad'); }
+    else if (state.confirmed) { t.textContent = state.memoryOnly ? 'Not saving' : 'Saved on this phone'; el.classList.add(state.memoryOnly ? 'bad' : 'ok'); }
+    else t.textContent = 'Connecting…';
+    $('#addBtn').disabled = state.unavailable || !!state.loadError || !state.canWrite;
+    updateSaveButtons();
+  }
+  function stateCard() {
+    if (state.unavailable) return `<h2>Storage isn't available</h2><p>This browser is blocking storage, so readings can't be kept. Open BP Tracker from your home screen, not a private window.</p>`;
+    if (state.loadError) return `<h2>Your readings didn't load</h2><p>Close and reopen the app to try again.</p>`;
+    if (!state.loaded) {
+      return `<h2>Loading your readings…</h2><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%"></div>` +
+        (state.slow ? `<p>Can't reach your readings yet. They'll appear when the connection returns.</p>` : `<p>Your averages, trends and comparisons appear here once your readings load.</p>`);
+    }
+    return `<h2>No readings yet</h2><p>Tap <b>Add reading</b> to log your first one, or open <b>Readings</b> and tap <b>Import CSV</b> to load a backup. For an average you can rely on, sit for 5 minutes, take 2 readings a minute apart, and do it morning and evening for 7 days.</p>`;
+  }
+  function render() { renderTop(); renderOverview(); renderReadings(); }
+
+  function renderOverview() {
+    const ready = state.loaded && !state.unavailable && !state.loadError && state.readings.length;
+    $('#ovState').hidden = !!ready;
+    $('#ovMain').hidden = !ready;
+    if (!ready) { $('#ovState').innerHTML = stateCard(); return; }
+    $('#ovHero').innerHTML = heroHTML();
+    $('#ovWeek').innerHTML = weekHTML();
+    for (const b of $$('#rangeChips button')) b.setAttribute('aria-pressed', String(Number(b.dataset.range) === state.range));
+    const list = rangeReadings();
+    $('#trendSub').textContent = rangeLabel();
+    $('#ovMix').innerHTML = mixHTML(list);
+    $('#ovCmp').innerHTML = cmpHTML(list);
+    drawTrend();
+  }
+  const rangeLabel = () => (state.range ? `Last ${state.range} days` : 'All readings');
+  function rangeReadings() {
+    if (!state.range) return state.readings;
+    const tn = dayNum(todayStr());
+    return state.readings.filter((r) => dayNum(r.date) > tn - state.range);
+  }
+  function heroHTML() {
+    const t = todayStr(), tn = dayNum(t);
+    const week = state.readings.filter((r) => { const dn = dayNum(r.date); return dn >= tn - 6 && dn <= tn; });
+    const a = agg(week), all = agg(state.readings);
+    const daysLogged = new Set(incl(week).map((r) => r.date)).size;
+    const latest = [...state.readings].reverse().find((r) => !r.exclude) || state.readings[state.readings.length - 1];
+    let html = `<div class="hero-head"><h2 class="eyebrow" id="heroTitle">Last 7 days</h2>${a ? pill(a.s, a.d) : ''}</div>`;
+    if (a) {
+      html += `<div class="readout" aria-label="Average ${rd(a.s)} over ${rd(a.d)} millimetres of mercury">
+        <div class="ro-row" aria-hidden="true"><span class="ro-lbl">SYS</span><span class="ro-num">${rd(a.s)}</span><span class="ro-unit">mmHg</span></div>
+        <div class="ro-row" aria-hidden="true"><span class="ro-lbl">DIA</span><span class="ro-num">${rd(a.d)}</span><span class="ro-unit">mmHg</span></div>
+      </div>
+      <p class="hero-sub">Average of ${a.n} reading${a.n === 1 ? '' : 's'} on ${daysLogged} day${daysLogged === 1 ? '' : 's'} · ${fmtDay(fromDayNum(tn - 6), false)} – ${fmtDay(t, false)}</p>`;
+      if (daysLogged < 7) html += `<p class="hero-hint">${daysLogged} of 7 days logged. A full week of morning and evening readings gives an average your doctor can rely on.</p>`;
+    } else {
+      html += `<p class="hero-empty">No readings in the last 7 days. Add one to start this week's average.</p>`;
+    }
+    html += `<dl class="hero-meta">
+      <div><dt>All readings</dt><dd>${all ? `<b>${rd(all.s)}/${rd(all.d)}</b><span>${all.n} reading${all.n === 1 ? '' : 's'}</span>` : '<b>–</b>'}</dd></div>
+      <div><dt>Latest</dt><dd><b>${latest.sys}/${latest.dia}</b><span>${relDay(latest.date)}, ${fmtTime(latest.time)}</span></dd></div>
+    </dl>`;
+    return html;
+  }
+  function weekHTML() {
+    const t = todayStr();
+    const days = weekSlots(state.readings, t);
+    const done = days.reduce((n, d) => n + (d.am ? 1 : 0) + (d.pm ? 1 : 0), 0);
+    const head = days.map((d) => { const dt = parseYmd(d.date); return `<span class="wk-day${d.date === t ? ' is-today' : ''}"><span>${WD[dt.getDay()]}</span><b>${dt.getDate()}</b></span>`; }).join('');
+    const row = (slot, label, word) => `<span class="wk-lbl">${label}</span>` + days.map((d) => {
+      const n = d[slot];
+      return `<span class="wk-slot${n ? ' on' : ''}" title="${fmtDay(d.date)} ${word}: ${n ? `${n} reading${n === 1 ? '' : 's'}` : 'none'}"><i></i></span>`;
+    }).join('');
+    return `<div class="card-head"><h2>Sittings this week</h2><span class="muted small">${done} of 14 logged</span></div>
+      <div class="wk" role="img" aria-label="${done} of 14 morning and evening sittings logged in the last 7 days"><span></span>${head}${row('am', 'AM', 'morning')}${row('pm', 'PM', 'evening')}</div>
+      <p class="muted small wk-note">Aim for one morning (5am–noon) and one evening (after 6pm) sitting a day. Late-night readings count toward the evening before.</p>`;
+  }
+  function mixHTML(list) {
+    const L = incl(list);
+    const counts = { normal: 0, elevated: 0, stage1: 0, stage2: 0 };
+    for (const r of L) counts[catOf(r.sys, r.dia)] += 1;
+    const n = L.length || 1;
+    const pct = (c) => `${rd((c / n) * 100)}%`;
+    const segs = CATS.filter((c) => counts[c.k]).map((c) => `<span class="k-${c.k}" style="flex-grow:${counts[c.k]}" title="${c.label}: ${counts[c.k]} (${pct(counts[c.k])})"></span>`).join('');
+    const rows = CATS.map((c) => `<li><span class="sw k-${c.k}" aria-hidden="true"></span><span class="nm">${c.label}<span class="rg">${c.range}</span></span><span class="ct">${counts[c.k]}</span><span class="pc">${pct(counts[c.k])}</span></li>`).join('');
+    return `<div class="card-head"><h3>Readings by category</h3><span class="muted small">${L.length} reading${L.length === 1 ? '' : 's'}</span></div>
+      <div class="stack" role="img" aria-label="${CATS.map((c) => `${c.label} ${counts[c.k]}`).join(', ')}">${segs}</div><ul class="mix-list">${rows}</ul>`;
+  }
+  function cmpTable(groups) {
+    const rows = groups.map((g) => ({ label: g.label, a: agg(g.list) })).filter((g) => g.a);
+    if (!rows.length) return '<p class="muted small">Not enough readings yet.</p>';
+    return `<table class="cmp"><tbody>${rows.map((g) => `<tr><th scope="row">${g.label}</th><td class="v">${rd(g.a.s)}/${rd(g.a.d)}</td><td class="n">${g.a.n} reading${g.a.n === 1 ? '' : 's'}</td></tr>`).join('')}</tbody></table>`;
+  }
+  function diffNote(A, B, aName, bName) {
+    if (!A || !B) return '';
+    const ds = rd(A.s) - rd(B.s);
+    if (ds === 0) return `<p class="cmp-note">${aName} and ${bName} read about the same.</p>`;
+    return `<p class="cmp-note">${aName} reads ${Math.abs(ds)} ${ds > 0 ? 'higher' : 'lower'} than ${bName} on average (SYS).</p>`;
+  }
+  function cmpHTML(list) {
+    const site = (k) => list.filter((r) => r.site === k), arm = (k) => list.filter((r) => r.arm === k), per = (k) => list.filter((r) => periodOf(r.time) === k);
+    const sp = spread(list);
+    return `<div class="card-head"><h3>Compare</h3><span class="muted small">${rangeLabel()}</span></div>
+      <div class="cmp-group"><h4>Cuff</h4>${cmpTable([{ label: 'Bicep', list: site('Bicep') }, { label: 'Wrist', list: site('Wrist') }])}${diffNote(agg(site('Wrist')), agg(site('Bicep')), 'Wrist', 'bicep')}</div>
+      <div class="cmp-group"><h4>Arm</h4>${cmpTable([{ label: 'Left', list: arm('L') }, { label: 'Right', list: arm('R') }])}${diffNote(agg(arm('L')), agg(arm('R')), 'Left arm', 'right arm')}</div>
+      <div class="cmp-group"><h4>Time of day</h4>${cmpTable([{ label: 'Morning <span class="muted small">5am–noon</span>', list: per('morning') }, { label: 'Afternoon <span class="muted small">noon–6pm</span>', list: per('afternoon') }, { label: 'Evening & night <span class="muted small">6pm–5am</span>', list: per('evening') }])}${diffNote(agg(per('morning')), agg(per('evening')), 'Morning', 'evening')}</div>
+      <div class="cmp-group"><h4>Within one sitting</h4>${sp
+        ? `<p class="spread"><b>${rd(sp.s)}</b> SYS · <b>${rd(sp.d)}</b> DIA <span class="muted small">typical spread, ${sp.n} sitting${sp.n === 1 ? '' : 's'}</span></p><p class="cmp-note">The gap between the highest and lowest reading in one sitting. Readings a minute apart usually stay within about 10; switching arms or devices adds to it.</p>`
+        : '<p class="muted small">Take 2 or more readings in a sitting to see how much they vary.</p>'}</div>`;
+  }
+
+  // ---------- trend chart ----------
+  let chartDays = [];
+  function drawTrend() {
+    const host = $('#trend');
+    const list = rangeReadings();
+    const days = Array.from(groupBy(list, (r) => r.date).entries()).map(([date, rs]) => ({ date, dn: dayNum(date), a: agg(rs) })).filter((d) => d.a).sort((x, y) => x.dn - y.dn);
+    chartDays = days;
+    if (!days.length) { host.innerHTML = '<p class="muted">No readings in this range.</p>'; $('#dayRead').textContent = ''; return; }
+    const W = Math.max(280, Math.round(host.clientWidth) || 320), H = 236, m = { l: 32, r: 30, t: 14, b: 28 };
+    const tn = dayNum(todayStr());
+    const d1 = Math.max(tn, days[days.length - 1].dn);
+    const d0 = Math.min(days[0].dn, d1 - 6);
+    const span = Math.max(1, d1 - d0), inset = 8, pw = W - m.l - m.r - inset * 2, ph = H - m.t - m.b;
+    const x = (dn) => m.l + inset + ((dn - d0) / span) * pw;
+    let lo = Math.min(...days.map((d) => d.a.minD)), hi = Math.max(...days.map((d) => d.a.maxS));
+    lo = Math.min(60, Math.floor((lo - 4) / 20) * 20); hi = Math.max(160, Math.ceil((hi + 4) / 20) * 20);
+    const y = (v) => m.t + ((hi - v) / (hi - lo)) * ph;
+    const f = (n) => n.toFixed(1);
+    let g = '';
+    for (let v = lo; v <= hi; v += 20) g += `<line class="gl" x1="${m.l}" x2="${W - m.r}" y1="${f(y(v))}" y2="${f(y(v))}"/><text x="${m.l - 6}" y="${f(y(v) + 4)}" text-anchor="end">${v}</text>`;
+    for (const v of [130, 80]) g += `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${f(y(v))}" y2="${f(y(v))}"/><text x="${W - m.r + 5}" y="${f(y(v) + 4)}">${v}</text>`;
+    const maxLabels = Math.max(2, Math.floor(pw / 62)), step = Math.max(1, Math.ceil(span / (maxLabels - 1)));
+    for (let dn = d1; dn >= d0; dn -= step) { const ds = fromDayNum(dn); const dt = parseYmd(ds); g += `<text x="${f(x(dn))}" y="${H - 8}" text-anchor="middle">${dt.getDate()} ${MO[dt.getMonth()]}</text>`; }
+    const series = [
+      { k: 'sys', v: (d) => d.a.s, lo: (d) => d.a.minS, hi: (d) => d.a.maxS },
+      { k: 'dia', v: (d) => d.a.d, lo: (d) => d.a.minD, hi: (d) => d.a.maxD },
+    ];
+    for (const s of series) for (const d of days) g += `<line class="rng ${s.k}" x1="${f(x(d.dn))}" x2="${f(x(d.dn))}" y1="${f(y(s.hi(d)))}" y2="${f(y(s.lo(d)))}"/>`;
+    for (const s of series) {
+      let solid = '', gap = '';
+      for (let i = 1; i < days.length; i++) {
+        const a = days[i - 1], b = days[i];
+        const seg = `M${f(x(a.dn))} ${f(y(s.v(a)))}L${f(x(b.dn))} ${f(y(s.v(b)))}`;
+        if (b.dn - a.dn <= 1) solid += seg; else gap += seg;
+      }
+      if (solid) g += `<path class="ln ${s.k}" d="${solid}"/>`;
+      if (gap) g += `<path class="ln gap ${s.k}" d="${gap}"/>`;
+      for (const d of days) g += `<circle class="pt ${s.k}" cx="${f(x(d.dn))}" cy="${f(y(s.v(d)))}" r="4"/>`;
+    }
+    const last = days[days.length - 1], lx = x(last.dn), right = lx > m.l + 90;
+    const anchor = right ? 'end' : 'start', dx = right ? -9 : 9;
+    g += `<text class="dl" x="${f(lx + dx)}" y="${f(y(last.a.s) - 9)}" text-anchor="${anchor}">SYS ${rd(last.a.s)}</text>`;
+    g += `<text class="dl" x="${f(lx + dx)}" y="${f(y(last.a.d) + 18)}" text-anchor="${anchor}">DIA ${rd(last.a.d)}</text>`;
+    g += '<g id="hl"></g>';
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Daily average blood pressure, ${rangeLabel().toLowerCase()}. Latest day ${rd(last.a.s)} over ${rd(last.a.d)}.">${g}</svg>`;
+    const svg = host.firstChild;
+    const pick = (clientX) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ((clientX - rect.left) * W) / rect.width;
+      let best = null, bd = Infinity;
+      for (const d of days) { const dd = Math.abs(x(d.dn) - px); if (dd < bd) { bd = dd; best = d; } }
+      return best;
+    };
+    const mark = (d) => {
+      const cx = f(x(d.dn));
+      $('#hl', svg).innerHTML = `<line class="xh" x1="${cx}" x2="${cx}" y1="${m.t}" y2="${H - m.b}"/>` +
+        series.map((s) => `<circle class="pt ${s.k}" cx="${cx}" cy="${f(y(s.v(d)))}" r="6.5"/>`).join('');
+      state.selDay = d.date;
+      dayRead(d);
+    };
+    svg.addEventListener('pointerdown', (e) => { const d = pick(e.clientX); if (d) mark(d); });
+    svg.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) { const d = pick(e.clientX); if (d && d.date !== state.selDay) mark(d); } });
+    const sel = days.find((d) => d.date === state.selDay);
+    if (sel) mark(sel); else dayRead(last);
+  }
+  function dayRead(d) {
+    const a = d.a;
+    $('#dayRead').innerHTML = `<b>${relDay(d.date)}</b><span>${a.n} reading${a.n === 1 ? '' : 's'}</span><span>avg <span class="num">${rd(a.s)}/${rd(a.d)}</span></span>${pill(a.s, a.d)}<span>SYS ${a.minS}–${a.maxS} · DIA ${a.minD}–${a.maxD}</span>`;
+  }
+
+  // ---------- readings list ----------
+  function renderReadings() {
+    const host = $('#rdList');
+    $('#exportBtn').hidden = !state.readings.length;
+    backupLine();
+    if (!state.loaded || state.unavailable || state.loadError || !state.readings.length) { host.innerHTML = `<div class="card state">${stateCard()}</div>`; return; }
+    const days = Array.from(groupBy(state.readings, (r) => r.date).entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    const shown = days.slice(0, state.daysShown);
+    let html = shown.map(([date, list]) => dayHTML(date, list)).join('');
+    if (days.length > shown.length) html += `<button type="button" class="btn secondary more-days" id="moreDays">Show older days (${days.length - shown.length} more)</button>`;
+    host.innerHTML = html;
+  }
+  const armWord = (a) => (a === 'L' ? 'Left' : a === 'R' ? 'Right' : 'Arm not set');
+  function dayHTML(date, list) {
+    const a = agg(list);
+    const rows = list.map((r) => {
+      const k = catOf(r.sys, r.dia);
+      return `<li><button type="button" class="rrow${r.exclude ? ' is-out' : ''}" data-id="${esc(r.id)}" aria-label="Edit ${r.sys} over ${r.dia} at ${fmtTime(r.time)}, ${armWord(r.arm).toLowerCase()} ${esc(r.site || '')}${r.exclude ? ', left out of averages' : ''}">
+        <span class="rr-time">${fmtTime(r.time)}</span>
+        <span class="rr-val">${r.sys}<span class="sl">/</span>${r.dia}${r.exclude ? '<span class="out-tag">Left out</span>' : ''}</span>
+        <span class="rr-tags">${r.arm || '?'} · ${esc(r.site || '?')}</span>
+        <span class="rr-cat k-${k}" aria-hidden="true" title="${catLabel(k)}"></span>
+        ${r.note ? `<span class="rr-note">${esc(r.note)}</span>` : ''}
+      </button></li>`;
+    }).join('');
+    return `<section class="day" aria-label="${fmtDay(date)}"><div class="day-head">
+        <div class="day-top"><h3 class="day-title">${relDay(date)} <span class="day-count">· ${list.length} reading${list.length === 1 ? '' : 's'}</span></h3>${a ? pill(a.s, a.d) : ''}</div>
+        ${a ? `<div class="day-stats"><span>avg <b>${rd(a.s)}/${rd(a.d)}</b></span><span>SYS <b>${a.minS}–${a.maxS}</b></span><span>DIA <b>${a.minD}–${a.maxD}</b></span></div>` : '<div class="day-stats">All readings left out</div>'}
+      </div><ul class="rows">${rows}</ul></section>`;
+  }
+
+  // ---------- export ----------
+  function csvCell(v) {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function toCsv(list) {
+    const rows = [['Date', 'Time', 'SYS', 'DIA', 'Arm', 'Site', 'Left out', 'Note']];
+    for (const r of list) rows.push([r.date, r.time, r.sys, r.dia, r.arm, r.site, r.exclude ? 'Yes' : '', r.note]);
+    return rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+  }
+  function csvFallback(csv, tryClipboard) {
+    const ta = $('#csvText');
+    ta.value = csv; $('#csvBox').hidden = false;
+    const select = () => { ta.focus(); ta.select(); };
+    if (tryClipboard && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(csv).then(() => toast('Copied. Paste it into a spreadsheet or an email.'), () => { select(); toast('Select the text below and copy it.'); });
+    } else { select(); toast('Select the text below and copy it.'); }
+  }
+  function exportCsv() {
+    const csv = toCsv(state.readings);
+    if (!state.downloads) { csvFallback(csv, true); return; }
+    state.downloads.save({ filename: `bp-readings-${todayStr()}.csv`, data: '﻿' + csv }).then(
+      (res) => { markBackup(); toast(res && res.status === 'shared' ? 'Backup ready' : 'CSV saved'); },
+      (e) => {
+        const c = e && e.code;
+        if (c === 'declined') return;
+        if (c === 'rate_limited') { toast('A save is already waiting for you to confirm.'); return; }
+        csvFallback(csv, false);
+      }
+    );
+  }
+
+  // ---------- views ----------
+  function showView(v, push) {
+    state.view = v;
+    $('#ov').hidden = v !== 'ov';
+    $('#rd').hidden = v !== 'rd';
+    for (const b of $$('.tab')) { if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+    if (push) { const h = '#' + (v === 'rd' ? 'readings' : 'overview'); if (location.hash !== h) history.replaceState(null, '', h); }
+    if (v === 'ov') drawTrendIfReady();
+    window.scrollTo(0, 0);
+  }
+  function drawTrendIfReady() { if (state.view === 'ov' && !$('#ovMain').hidden) drawTrend(); }
+
+  // ---------- events ----------
+  document.addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (tab) { showView(tab.dataset.view, true); return; }
+    if (e.target.closest('#addBtn')) { openSheet('new'); return; }
+    const row = e.target.closest('.rrow');
+    if (row) {
+      const rec = state.readings.find((r) => r.id === row.dataset.id);
+      if (rec && state.canWrite && state.db) openSheet('edit', rec);
+      else if (rec) toast('This page is view-only for you.');
+      return;
+    }
+    const chip = e.target.closest('#rangeChips button');
+    if (chip) { state.range = Number(chip.dataset.range); state.selDay = null; renderOverview(); return; }
+    if (e.target.closest('#exportBtn')) { exportCsv(); return; }
+    if (e.target.closest('#importBtn')) { $('#importFile').value = ''; $('#importFile').click(); return; }
+    if (e.target.closest('#moreDays')) { state.daysShown += 14; renderReadings(); }
+  });
+  $('#sheetClose').addEventListener('click', closeSheet);
+  $('#backdrop').addEventListener('click', closeSheet);
+  $('#sheet').addEventListener('keydown', trapFocus);
+  $('#saveBtn').addEventListener('click', () => save(false));
+  $('#saveNextBtn').addEventListener('click', () => save(true));
+  $('#saveEditBtn').addEventListener('click', () => save(false));
+  $('#deleteBtn').addEventListener('click', () => { showFoot('confirm'); $('#keepBtn').focus(); });
+  $('#keepBtn').addEventListener('click', () => { showFoot('edit'); $('#deleteBtn').focus(); });
+  $('#confirmDeleteBtn').addEventListener('click', del);
+  for (const b of $$('#armSeg button')) b.addEventListener('click', () => { S.v.arm = b.dataset.v; syncSegs(); });
+  for (const b of $$('#siteSeg button')) b.addEventListener('click', () => { S.v.site = b.dataset.v; syncSegs(); });
+  $('#whenBtn').addEventListener('click', () => {
+    const p = $('#whenPanel'), open = p.hidden;
+    p.hidden = !open;
+    $('#whenBtn').setAttribute('aria-expanded', String(open));
+    $('#whenChg').textContent = open ? 'Done' : 'Change';
+    if (open) requestAnimationFrame(() => { setWhenWheels(); [wDay, wHour, wMin, wAp].forEach((w) => w.sync()); });
+  });
+  $('#nowBtn').addEventListener('click', () => { S.v.date = todayStr(); S.v.time = nowTime(); setWhenWheels(); whenText(); });
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#readings') showView('rd');
+    else if (location.hash === '#overview') showView('ov');
+  });
+  if ('ResizeObserver' in window) {
+    let w = 0, t = 0;
+    new ResizeObserver((entries) => {
+      const nw = Math.round(entries[0].contentRect.width);
+      if (nw === w) return; w = nw;
+      clearTimeout(t); t = setTimeout(drawTrendIfReady, 80);
+    }).observe($('#trend'));
+  }
+
+  // ---------- on-device storage (same API the rest of the app uses) ----------
+  const KEY = 'bp-tracker-data-v1';
+  function makeLocalDb() {
+    let docs = {}, ok = true;
+    try { const raw = localStorage.getItem(KEY); if (raw) docs = JSON.parse(raw).months || {}; localStorage.setItem(KEY + '-probe', '1'); localStorage.removeItem(KEY + '-probe'); }
+    catch (e) { ok = false; }
+    const listeners = [];
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+    const merge = (t, src) => { for (const [k, v] of Object.entries(src)) { if (v && typeof v === 'object' && !Array.isArray(v) && t[k] && typeof t[k] === 'object') merge(t[k], v); else t[k] = clone(v); } };
+    const persist = () => { if (!ok) return; try { localStorage.setItem(KEY, JSON.stringify({ months: docs })); } catch (e) { ok = false; state.memoryOnly = true; toast("This phone's storage is full or blocked, so new readings may not be kept. Export a backup now."); } };
+    const snap = () => {
+      const list = Object.keys(docs).sort().map((id) => { const body = clone(docs[id]); return { id, exists: true, data: () => body, metadata: { fromCache: false, hasPendingWrites: false } }; });
+      return { docs: list, size: list.length, empty: !list.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } };
+    };
+    const emit = () => setTimeout(() => { const sn = snap(); listeners.forEach((f) => f(sn)); }, 0);
+    const id = (path) => path.split('/')[1];
+    return {
+      ok: () => ok,
+      collection: () => ({ onSnapshot(next) { listeners.push(next); setTimeout(() => next(snap()), 0); return () => {}; } }),
+      doc: (path) => ({
+        async get() { const d = docs[id(path)]; return { id: id(path), exists: !!d, data: () => d && clone(d), metadata: {} }; },
+        async set(body) { docs[id(path)] = clone(body); persist(); emit(); },
+        async update(body) { const d = docs[id(path)]; if (!d) throw { code: 'invalid_argument', message: 'missing' }; merge(d, body); persist(); emit(); },
+        async delete() { delete docs[id(path)]; persist(); emit(); },
+      }),
+    };
+  }
+  const localDownloads = {
+    save({ filename, data }) {
+      const blob = new Blob([data], { type: 'text/csv' });
+      let file = null;
+      try { file = new File([blob], filename, { type: 'text/csv' }); } catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: filename }).then(() => ({ status: 'shared' }), (e) => { throw { code: e && e.name === 'AbortError' ? 'declined' : 'unavailable' }; });
+      }
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      return Promise.resolve({ status: 'saved' });
+    },
+  };
+  function markBackup() { try { localStorage.setItem('bp-last-backup', todayStr()); } catch (e) { /* ignore */ } backupLine(); }
+  function backupLine() {
+    let last = null; try { last = localStorage.getItem('bp-last-backup'); } catch (e) { last = null; }
+    const el = $('#backupLine'); if (!el) return;
+    if (!state.readings.length) { el.textContent = 'Readings are saved on this phone. Import CSV loads a backup or another export.'; return; }
+    const days = last ? dayNum(todayStr()) - dayNum(last) : null;
+    el.textContent = last ? `Last backup ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'}.${days > 14 ? ' Export a new one to keep your readings safe.' : ''}` : 'No backup yet. Export a CSV now and then and keep it in Files or Google Drive.';
+  }
+
+  // ---------- import ----------
+  function parseCsv(text) {
+    const rows = []; let row = [], cell = '', q = false;
+    text = text.replace(/^﻿/, '');
+    for (let k = 0; k < text.length; k++) {
+      const ch = text[k];
+      if (q) { if (ch === '"') { if (text[k + 1] === '"') { cell += '"'; k++; } else q = false; } else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[k + 1] === '\n') k++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.some((c) => c.trim()));
+  }
+  function normDate(v) {
+    v = v.trim(); let m;
+    if ((m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${pad2(+m[2])}-${pad2(+m[3])}`;
+    if ((m = v.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/))) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${pad2(+m[2])}-${pad2(+m[1])}`; }
+    return null;
+  }
+  function normTime(v) {
+    const m = v.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/);
+    if (!m) return null;
+    let h = +m[1]; const mi = +m[2], ap = m[3] && m[3].toUpperCase();
+    if (ap === 'PM' && h < 12) h += 12; if (ap === 'AM' && h === 12) h = 0;
+    return h < 24 && mi < 60 ? `${pad2(h)}:${pad2(mi)}` : null;
+  }
+  async function importCsv(text) {
+    const rows = parseCsv(text);
+    if (rows.length < 2) { toast("That file has no readings in it."); return; }
+    const head = rows[0].map((h) => h.trim().toLowerCase());
+    const col = (...names) => head.findIndex((h) => names.includes(h));
+    const c = { date: col('date'), time: col('time'), sys: col('sys', 'systolic'), dia: col('dia', 'diastolic'), arm: col('arm'), site: col('site', 'cuff'), out: col('left out', 'exclude', 'excluded'), note: col('note', 'notes') };
+    if (c.date < 0 || c.time < 0 || c.sys < 0 || c.dia < 0) { toast('This file needs Date, Time, SYS and DIA columns.'); return; }
+    const key = (r) => [r.date, r.time, r.sys, r.dia, r.arm, r.site].join('|');
+    const have = new Set(state.readings.map(key));
+    const fresh = []; let skipped = 0, bad = 0, n = 0;
+    for (const r of rows.slice(1)) {
+      const get = (k) => (c[k] >= 0 ? (r[c[k]] || '').trim() : '');
+      const date = normDate(get('date')), time = normTime(get('time')), sys = Math.round(Number(get('sys'))), dia = Math.round(Number(get('dia')));
+      if (!date || !time || !(sys >= 40 && sys <= 300) || !(dia >= 20 && dia <= 250)) { bad++; continue; }
+      const arm = /^l/i.test(get('arm')) ? 'L' : /^r/i.test(get('arm')) ? 'R' : '';
+      const site = /^b/i.test(get('site')) ? 'Bicep' : /^w/i.test(get('site')) ? 'Wrist' : '';
+      const rec = { id: newId() + (n++), date, time, sys, dia, arm, site, exclude: /^(y|yes|true|1)$/i.test(get('out')), note: get('note').replace(/^'/, '').slice(0, 120), seq: n };
+      if (have.has(key(rec))) { skipped++; continue; }
+      have.add(key(rec)); fresh.push(rec);
+    }
+    const byMonth = groupBy(fresh, (r) => r.date.slice(0, 7));
+    for (const [mk, recs] of byMonth) {
+      const map = {}; for (const r of recs) map[r.id] = stored(r);
+      const ref = state.db.doc('months/' + mk);
+      const ex = await ref.get();
+      if (ex.exists) await ref.update({ readings: map }); else await ref.set({ month: mk, readings: map });
+    }
+    toast(`Imported ${fresh.length} reading${fresh.length === 1 ? '' : 's'}` + (skipped ? `, ${skipped} already here` : '') + (bad ? `, ${bad} rows unreadable` : '') + '.');
+  }
+  $('#importFile').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    f.text().then(importCsv).catch(() => toast("Couldn't read that file."));
+  });
+
+  // ---------- boot ----------
+  let pendingAdd = location.hash === '#add';
+  buildWheels();
+  if (location.hash === '#readings') showView('rd');
+  render();
+  const db = makeLocalDb();
+  state.db = db;
+  state.downloads = localDownloads;
+  if (!db.ok()) state.memoryOnly = true;
+  db.collection('months').onSnapshot((snap) => {
+    state.confirmed = true;
+    ingest(snap.docs);
+    state.loaded = true;
+    render();
+    if (pendingAdd) { pendingAdd = false; openSheet('new'); }
+  });
+  if (state.memoryOnly) setTimeout(() => toast("This browser won't keep readings. Open BP Tracker from your home screen, not a private window."), 600);
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
